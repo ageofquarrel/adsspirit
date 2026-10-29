@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Actions\Marketplace\DispatchOrderStatusEmailAction;
 use App\DTO\Marketplace\ReceiveWebhookEventDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Marketplace\StoreMarketplaceWebhookRequest;
@@ -15,6 +16,7 @@ final class MarketplaceWebhookController extends Controller
         StoreMarketplaceWebhookRequest $request,
         ReceiveWebhookEventService $receiveService,
         ApplyOrderEventService $applyService,
+        DispatchOrderStatusEmailAction $dispatchEmail,
     ): JsonResponse {
         $payload = $request->json()->all();
         $eventId = $request->validated('id');
@@ -26,8 +28,9 @@ final class MarketplaceWebhookController extends Controller
         ));
 
         if (! $wasDuplicate) {
-            $applyService->handle($payload['data']['order']);
+            $result = $applyService->handle($payload['data']['order']);
             $receiveService->markProcessed($eventId);
+            $dispatchEmail($result);
         }
 
         return response()->json(['status' => 'ok']);

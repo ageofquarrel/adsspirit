@@ -3,8 +3,10 @@
 namespace App\Providers;
 
 use App\Repositories\Contracts\MarketplaceWebhookEventRepositoryInterface;
+use App\Repositories\Contracts\OrderNotificationRepositoryInterface;
 use App\Repositories\Contracts\OrderRepositoryInterface;
 use App\Repositories\MarketplaceWebhookEventRepository;
+use App\Repositories\OrderNotificationRepository;
 use App\Repositories\OrderRepository;
 use Illuminate\Support\ServiceProvider;
 
@@ -16,5 +18,6 @@ class RepositoryServiceProvider extends ServiceProvider
     public array $bindings = [
         MarketplaceWebhookEventRepositoryInterface::class => MarketplaceWebhookEventRepository::class,
         OrderRepositoryInterface::class => OrderRepository::class,
+        OrderNotificationRepositoryInterface::class => OrderNotificationRepository::class,
     ];
 }
