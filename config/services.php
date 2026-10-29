@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'marketplace' => [
+        'webhook_secret' => env('MARKETPLACE_WEBHOOK_SECRET'),
+        // Seconds of drift allowed between X-Webhook-Timestamp and now.
+        'webhook_tolerance' => env('MARKETPLACE_WEBHOOK_TOLERANCE', 300),
+    ],
+
 ];
