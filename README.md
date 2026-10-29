@@ -47,15 +47,45 @@ Laravel-сервис для приёма вебхуков маркетплейс
 `APP_PORT`, `FORWARD_DB_PORT`, `FORWARD_MAILPIT_PORT`, `FORWARD_MAILPIT_SMTP_PORT`
 (см. `docker-compose.yml`).
 
+## Тестовые данные
+
+Чтобы руками посмотреть админку/API не отправляя вебхуки, есть сидер — генерирует фейковыми
+данными (`Faker`) 40 заказов (по 8 на каждый статус: `created`, `paid`, `shipped`, `delivered`,
+`cancelled`) с позициями и реалистичной историей статусов:
+
+```bash
+docker compose exec app php artisan migrate:fresh --seed --force
+```
+
+(`migrate:fresh` полностью пересоздаёт таблицы — если нужно просто досеять данные без сброса,
+используйте `php artisan db:seed`). Сидер — `database/seeders/OrderSeeder.php`.
+
 ## API
 
 - `POST /api/webhooks/marketplace` — приём вебхуков MarketHub (подпись проверяется
   `MARKETPLACE_WEBHOOK_SECRET`; пример отправки — `task/examples/send-event.php`).
 - `GET /api/orders` — список заказов, фильтры `status`/`email`, пагинация `page`/`per_page`.
+  Работает на тех же данных, что и админка (сидер ниже или реально принятые вебхуки) —
+  отдельно заполнять API нечем, это одни и те же таблицы.
 - `GET /api/orders/{id}` — карточка заказа с позициями и историей статусов.
 
 Контракт — в [`task/openapi.yaml`](task/openapi.yaml). Принятые решения и допущения — в
 [`DECISIONS.md`](DECISIONS.md).
+
+### Ручная проверка вебхука и писем
+
+Приём вебхука и отправку писем нельзя «засеять» в БД напрямую — это сквозной сценарий
+(подпись → идемпотентность → переход статуса → письмо в очереди), который нужно реально
+прогнать через HTTP. Готовый подписывающий скрипт уже есть в задании:
+
+```bash
+docker compose exec -e MARKETPLACE_WEBHOOK_SECRET=change-me app \
+  php task/examples/send-event.php http://nginx/api/webhooks/marketplace task/examples/order-paid.json
+```
+
+(вместо `order-paid.json` — любой файл из `task/examples/`). Письмо появится в Mailpit
+(http://localhost:8025) через пару секунд — воркер очереди опрашивает БД раз в 3 секунды
+(`--sleep=3` в `docker-compose.yml`), это не баг.
 
 ## Полезные команды
 
