@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Repositories\Contracts;
 
 use App\DTO\Marketplace\OrderSnapshotDTO;
@@ -10,20 +12,15 @@ use Illuminate\Pagination\LengthAwarePaginator;
 
 interface OrderRepositoryInterface
 {
-    public function find(string $id): ?Order;
+    public function find(string $externalId): ?Order;
 
-    /**
-     * Same as {@see self::find()}, but eager-loads the relations needed for
-     * the order detail view (items, status history).
-     */
-    public function findWithDetails(string $id): ?Order;
+    public function findWithDetails(string $externalId): ?Order;
 
     public function paginate(ListOrdersFiltersDTO $filters): LengthAwarePaginator;
 
     /**
-     * Upserts the order, fully replaces its items, and records the status
-     * transition in the status history (upserted by status, so a replayed
-     * snapshot for an already-recorded status just refreshes its timestamp).
+     * Создаёт или обновляет заказ, полностью пересоздаёт его позиции
+     * и фиксирует переход статуса в истории.
      */
     public function applySnapshot(OrderSnapshotDTO $data, CarbonInterface $statusChangedAt): Order;
 }

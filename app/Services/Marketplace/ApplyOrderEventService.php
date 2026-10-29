@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\Marketplace;
 
 use App\Actions\Marketplace\MapOrderSnapshotAction;
@@ -17,14 +19,13 @@ final readonly class ApplyOrderEventService
     ) {}
 
     /**
-     * @param  array<string, mixed>  $rawOrder  The `data.order` snapshot from the webhook body.
+     * @param  array<string, mixed>  $rawOrder  Снэпшот `data.order` из тела вебхука.
      */
     public function handle(array $rawOrder): ApplyOrderEventResultDTO
     {
-        $snapshot = ($this->mapSnapshot)($rawOrder);
-        $existing = $this->repository->find($snapshot->id);
+        $snapshot = $this->mapSnapshot->execute($rawOrder);
+        $existing = $this->repository->find($snapshot->externalId);
 
-        // Out-of-order / replayed delivery guard: only strictly newer snapshots are applied.
         if ($existing !== null && $existing->updated_at->greaterThanOrEqualTo($snapshot->updatedAt)) {
             return new ApplyOrderEventResultDTO(
                 applied: false,
@@ -36,12 +37,12 @@ final readonly class ApplyOrderEventService
         }
 
         $previousStatus = $existing?->status;
-        $statusChangedAt = ($this->resolveStatusTimestamp)($snapshot);
+        $statusChangedAt = $this->resolveStatusTimestamp->execute($snapshot);
         $order = $this->repository->applySnapshot($snapshot, $statusChangedAt);
         $statusChanged = $previousStatus !== $order->status;
 
         if ($statusChanged) {
-            OrderStatusChanged::dispatch($order->id, $previousStatus, $order->status);
+            OrderStatusChanged::dispatch($order->external_id, $previousStatus, $order->status);
         }
 
         return new ApplyOrderEventResultDTO(

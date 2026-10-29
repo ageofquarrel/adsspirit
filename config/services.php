@@ -4,13 +4,13 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Third Party Services
+    | Сторонние сервисы
     |--------------------------------------------------------------------------
     |
-    | This file is for storing the credentials for third party services such
-    | as Resend, Postmark, AWS, and more. This file provides the de facto
-    | location for this type of information, allowing packages to have
-    | a conventional file to locate the various service credentials.
+    | Этот файл предназначен для хранения учётных данных сторонних сервисов,
+    | таких как Resend, Postmark, AWS и других. Он служит стандартным местом
+    | для такой информации, чтобы пакеты могли по общепринятому соглашению
+    | находить учётные данные различных сервисов.
     |
     */
 
@@ -37,7 +37,6 @@ return [
 
     'marketplace' => [
         'webhook_secret' => env('MARKETPLACE_WEBHOOK_SECRET'),
-        // Seconds of drift allowed between X-Webhook-Timestamp and now.
         'webhook_tolerance' => env('MARKETPLACE_WEBHOOK_TOLERANCE', 300),
     ],
 

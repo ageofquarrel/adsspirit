@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Repositories\Contracts;
 
 use App\Enums\OrderStatus;
@@ -7,10 +9,10 @@ use App\Enums\OrderStatus;
 interface OrderNotificationRepositoryInterface
 {
     /**
-     * Atomically claims the right to send this notification.
+     * Атомарно резервирует право отправить это уведомление.
      *
-     * @return bool `true` the first time it's called for this (order, type) pair,
-     *              `false` on every subsequent call (already sent before).
+     * @return bool `true` при первом вызове для этой пары (order, type),
+     *              `false` при каждом следующем вызове (уже было отправлено).
      */
-    public function reserve(string $orderId, OrderStatus $type): bool;
+    public function reserve(int $orderId, OrderStatus $type): bool;
 }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Actions\Marketplace;
 
 use App\DTO\Marketplace\OrderItemSnapshotDTO;
@@ -9,22 +11,22 @@ use App\Http\Requests\Marketplace\StoreMarketplaceWebhookRequest;
 use Carbon\CarbonImmutable;
 
 /**
- * Maps the raw `data.order` array from a marketplace webhook body into
- * a typed {@see OrderSnapshotDTO}. Assumes the shape has already been
- * validated by {@see StoreMarketplaceWebhookRequest}.
+ * Преобразует сырой массив `data.order` из тела вебхука маркетплейса
+ * в типизированный {@see OrderSnapshotDTO}. Предполагает, что форма уже
+ * провалидирована в {@see StoreMarketplaceWebhookRequest}.
  */
 class MapOrderSnapshotAction
 {
     /**
      * @param  array<string, mixed>  $order
      */
-    public function __invoke(array $order): OrderSnapshotDTO
+    public function execute(array $order): OrderSnapshotDTO
     {
         $customer = $order['customer'];
         $shipment = $order['shipment'] ?? null;
 
         return new OrderSnapshotDTO(
-            id: $order['id'],
+            externalId: $order['id'],
             number: $order['number'],
             status: OrderStatus::from($order['status']),
             currency: $order['currency'],

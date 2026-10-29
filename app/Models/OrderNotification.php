@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use App\Enums\OrderStatus;
@@ -7,7 +9,7 @@ use Illuminate\Database\Eloquent\Attributes\Guarded;
 use Illuminate\Database\Eloquent\Model;
 
 #[Guarded([])]
-class OrderNotification extends Model
+final class OrderNotification extends Model
 {
     protected function casts(): array
     {

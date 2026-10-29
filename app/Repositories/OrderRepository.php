@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Repositories;
 
 use App\DTO\Marketplace\OrderSnapshotDTO;
@@ -13,14 +15,14 @@ use Illuminate\Support\Str;
 
 final class OrderRepository implements OrderRepositoryInterface
 {
-    public function find(string $id): ?Order
+    public function find(string $externalId): ?Order
     {
-        return Order::query()->find($id);
+        return Order::query()->where('external_id', $externalId)->first();
     }
 
-    public function findWithDetails(string $id): ?Order
+    public function findWithDetails(string $externalId): ?Order
     {
-        return Order::query()->with(['items', 'statusHistory'])->find($id);
+        return Order::query()->with(['items', 'statusHistory'])->where('external_id', $externalId)->first();
     }
 
     public function paginate(ListOrdersFiltersDTO $filters): LengthAwarePaginator
@@ -37,12 +39,8 @@ final class OrderRepository implements OrderRepositoryInterface
 
     public function applySnapshot(OrderSnapshotDTO $data, CarbonInterface $statusChangedAt): Order
     {
-        // READ COMMITTED (config/database.php) removes the gap-lock deadlocks
-        // this used to hit under concurrent writes to different orders, but
-        // two webhook events for the *same* order racing each other is still
-        // a real possibility — `attempts: 3` is cheap insurance against that.
         return DB::transaction(function () use ($data, $statusChangedAt) {
-            $order = Order::query()->updateOrCreate(['id' => $data->id], [
+            $order = Order::query()->updateOrCreate(['external_id' => $data->externalId], [
                 'number' => $data->number,
                 'status' => $data->status,
                 'currency' => $data->currency,
@@ -70,7 +68,7 @@ final class OrderRepository implements OrderRepositoryInterface
                 'name' => $item->name,
                 'quantity' => $item->quantity,
                 'price' => $item->price,
-                'order_id' => $data->id,
+                'order_id' => $order->id,
                 'created_at' => $now,
                 'updated_at' => $now,
             ], $data->items));

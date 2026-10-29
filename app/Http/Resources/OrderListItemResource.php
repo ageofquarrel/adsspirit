@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Resources;
 
 use App\Models\Order;
@@ -17,7 +19,7 @@ final class OrderListItemResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
+            'id' => $this->external_id,
             'number' => $this->number,
             'status' => $this->status->value,
             'customer' => [

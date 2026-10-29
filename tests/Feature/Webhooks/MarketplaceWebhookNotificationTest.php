@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\Webhooks;
 
 use App\Enums\OrderStatus;
@@ -14,7 +16,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
-class MarketplaceWebhookNotificationTest extends TestCase
+final class MarketplaceWebhookNotificationTest extends TestCase
 {
     private const string SECRET = 'whsec_test_secret';
 
@@ -44,55 +46,42 @@ class MarketplaceWebhookNotificationTest extends TestCase
 
     public function test_a_paid_event_sends_the_paid_email_to_the_customer(): void
     {
-        // Arrange
         Mail::fake();
 
-        // Act — the queue runs synchronously in tests (QUEUE_CONNECTION=sync).
         $this->postExample('order-paid.json')->assertOk();
 
-        // Assert
         Mail::assertSent(OrderPaidMail::class, fn ($mail) => $mail->hasTo('anna.smirnova@example.com'));
     }
 
     public function test_a_shipped_event_sends_the_shipped_email(): void
     {
-        // Arrange
         Mail::fake();
 
-        // Act
         $this->postExample('order-shipped.json')->assertOk();
 
-        // Assert
         Mail::assertSent(OrderShippedMail::class);
     }
 
     public function test_a_cancelled_event_sends_the_cancelled_email(): void
     {
-        // Arrange
         Mail::fake();
 
-        // Act
         $this->postExample('order-cancelled.json')->assertOk();
 
-        // Assert
         Mail::assertSent(OrderCancelledMail::class);
     }
 
     public function test_a_created_event_does_not_send_any_email(): void
     {
-        // Arrange
         Mail::fake();
 
-        // Act
         $this->postExample('order-created.json')->assertOk();
 
-        // Assert
         Mail::assertNothingSent();
     }
 
     public function test_replaying_the_same_paid_event_does_not_send_the_email_twice(): void
     {
-        // Arrange
         Mail::fake();
         $body = file_get_contents(base_path('task/examples/order-paid.json'));
         $event = json_decode($body, true);
@@ -107,7 +96,6 @@ class MarketplaceWebhookNotificationTest extends TestCase
         ]);
         $this->call('POST', '/api/webhooks/marketplace', [], [], [], $server, $body)->assertOk();
 
-        // Act — a real retry: same event id, new timestamp/signature.
         $secondTimestamp = (string) (((int) $firstTimestamp) + 5);
         $secondSignature = 'sha256='.hash_hmac('sha256', $secondTimestamp.'.'.$body, self::SECRET);
         $server = $this->transformHeadersToServerVars([
@@ -118,33 +106,25 @@ class MarketplaceWebhookNotificationTest extends TestCase
         ]);
         $this->call('POST', '/api/webhooks/marketplace', [], [], [], $server, $body)->assertOk();
 
-        // Assert
         Mail::assertSent(OrderPaidMail::class, 1);
     }
 
     public function test_a_paid_order_that_is_cancelled_before_the_listener_runs_never_gets_the_paid_email(): void
     {
-        // Arrange — simulate the race by cancelling the order directly in the DB
-        // between "apply paid" and "the queued listener actually running". Since
-        // events dispatch through the sync queue in tests, we fake the event to
-        // capture it instead of running the listener immediately, mutate the
-        // order, then run the listener for real.
         Event::fake([OrderStatusChanged::class]);
         Mail::fake();
 
         $this->postExample('order-paid.json')->assertOk();
 
-        $order = Order::query()->findOrFail('ord_7Q2KX9M4');
+        $order = Order::query()->where('external_id', 'ord_7Q2KX9M4')->firstOrFail();
         $order->forceFill(['status' => OrderStatus::Cancelled])->save();
 
-        // Act — now actually run the listener for the captured event.
         Event::assertDispatched(OrderStatusChanged::class, function (OrderStatusChanged $event) {
             app(SendOrderStatusEmailListener::class)->handle($event);
 
             return true;
         });
 
-        // Assert
         Mail::assertNothingSent();
     }
 }

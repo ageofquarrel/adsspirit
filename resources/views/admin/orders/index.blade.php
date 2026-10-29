@@ -44,7 +44,7 @@
                     <td>{{ $order->customer_name }}<br><small>{{ $order->customer_email }}</small></td>
                     <td>{{ $order->total }} {{ $order->currency }}</td>
                     <td>{{ $order->created_at->format('d.m.Y H:i') }}</td>
-                    <td><a class="back" href="{{ route('admin.orders.show', $order->id) }}">Открыть →</a></td>
+                    <td><a class="back" href="{{ route('admin.orders.show', $order->external_id) }}">Открыть →</a></td>
                 </tr>
             @endforeach
             </tbody>

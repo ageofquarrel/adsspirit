@@ -7,13 +7,14 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * The case-insensitive email filter in GET /api/orders does
-     * `LOWER(customer_email) = ?`, which can't use a plain index on
-     * `customer_email` (MySQL has to scan every row to evaluate the
-     * function). A functional index on the lowercased expression lets it
-     * use an index seek instead — MySQL 8.0.13+ supports this directly.
-     * Not applicable to the sqlite connection used in tests (not needed
-     * at that scale anyway).
+     * Фильтр по email без учёта регистра в GET /api/orders использует
+     * `LOWER(customer_email) = ?`, а это не может задействовать обычный
+     * индекс на `customer_email` (MySQL вынужден сканировать все строки,
+     * чтобы вычислить функцию). Функциональный индекс на выражении с
+     * приведением к нижнему регистру позволяет использовать поиск по
+     * индексу — MySQL 8.0.13+ поддерживает это напрямую. Не применяется
+     * к sqlite-соединению в тестах (при таком объёме данных там это и
+     * не нужно).
      */
     public function up(): void
     {
@@ -25,7 +26,7 @@ return new class extends Migration
     }
 
     /**
-     * Reverse the migrations.
+     * Откатывает миграцию.
      */
     public function down(): void
     {

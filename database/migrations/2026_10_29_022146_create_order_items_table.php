@@ -7,25 +7,23 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Run the migrations.
+     * Применяет миграцию.
      */
     public function up(): void
     {
         Schema::create('order_items', function (Blueprint $table) {
             $table->id();
-            $table->string('order_id');
+            $table->foreignId('order_id')->constrained('orders')->cascadeOnDelete();
             $table->string('sku');
             $table->string('name');
             $table->unsignedInteger('quantity');
             $table->decimal('price', 12, 2);
             $table->timestamps();
-
-            $table->foreign('order_id')->references('id')->on('orders')->cascadeOnDelete();
         });
     }
 
     /**
-     * Reverse the migrations.
+     * Откатывает миграцию.
      */
     public function down(): void
     {

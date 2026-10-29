@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use App\Enums\OrderStatus;
@@ -10,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Table('order_status_history')]
 #[Guarded([])]
-class OrderStatusHistory extends Model
+final class OrderStatusHistory extends Model
 {
     protected function casts(): array
     {

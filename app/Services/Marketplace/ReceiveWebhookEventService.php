@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\Marketplace;
 
 use App\DTO\Marketplace\ReceiveWebhookEventDTO;
@@ -12,13 +14,14 @@ final readonly class ReceiveWebhookEventService
     ) {}
 
     /**
-     * Persists the event the first time it's seen. If it was already stored
-     * by an earlier delivery attempt but never finished processing (e.g. the
-     * worker crashed between storing it and applying it to the order), this
-     * does *not* skip it — only a fully processed event is treated as a
-     * no-op duplicate, so a MarketHub retry can still complete the work.
+     * Сохраняет событие при первом появлении. Если оно уже было сохранено
+     * предыдущей попыткой доставки, но обработка так и не завершилась
+     * (например, воркер упал между сохранением и применением к заказу),
+     * метод *не* пропускает его — дублем без действия считается только
+     * полностью обработанное событие, поэтому повтор от MarketHub всё ещё
+     * может довести работу до конца.
      *
-     * @return bool `true` when the event was already fully processed before.
+     * @return bool `true`, если событие уже было полностью обработано ранее.
      */
     public function handle(ReceiveWebhookEventDTO $data): bool
     {

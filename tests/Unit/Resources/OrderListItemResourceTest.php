@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit\Resources;
 
 use App\Enums\OrderStatus;
@@ -7,13 +9,12 @@ use App\Http\Resources\OrderListItemResource;
 use App\Models\Order;
 use Tests\TestCase;
 
-class OrderListItemResourceTest extends TestCase
+final class OrderListItemResourceTest extends TestCase
 {
     public function test_it_exposes_only_the_list_fields(): void
     {
-        // Arrange
         $order = Order::factory()->create([
-            'id' => 'ord_1',
+            'external_id' => 'ord_1',
             'number' => 'MH-1',
             'status' => OrderStatus::Paid,
             'customer_email' => 'anna@example.com',
@@ -22,10 +23,8 @@ class OrderListItemResourceTest extends TestCase
             'currency' => 'RUB',
         ]);
 
-        // Act
         $array = (new OrderListItemResource($order))->resolve();
 
-        // Assert
         $this->assertSame([
             'id' => 'ord_1',
             'number' => 'MH-1',

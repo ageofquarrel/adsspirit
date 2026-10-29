@@ -7,13 +7,12 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Default Database Connection Name
+    | Имя соединения с БД по умолчанию
     |--------------------------------------------------------------------------
     |
-    | Here you may specify which of the database connections below you wish
-    | to use as your default connection for database operations. This is
-    | the connection which will be utilized unless another connection
-    | is explicitly specified when you execute a query / statement.
+    | Здесь можно указать, какое из описанных ниже соединений использовать
+    | по умолчанию для операций с базой данных. Это соединение будет
+    | использоваться, если при выполнении запроса явно не указано другое.
     |
     */
 
@@ -21,12 +20,12 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Database Connections
+    | Соединения с базами данных
     |--------------------------------------------------------------------------
     |
-    | Below are all of the database connections defined for your application.
-    | An example configuration is provided for each database system which
-    | is supported by Laravel. You're free to add / remove connections.
+    | Ниже перечислены все соединения с базами данных, определённые для
+    | приложения. Для каждой системы БД, поддерживаемой Laravel, приведён
+    | пример конфигурации. Вы можете свободно добавлять и удалять соединения.
     |
     */
 
@@ -61,15 +60,6 @@ return [
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
-                // Default REPEATABLE READ takes gap locks on secondary/FK
-                // indexes for every insert, which can deadlock concurrent
-                // inserts into *different* orders' order_items/
-                // order_status_history rows (reproduced under load testing:
-                // ~28% of concurrent webhook writes failed with "Deadlock
-                // found" under REPEATABLE READ, 0% under READ COMMITTED).
-                // This app never relies on repeatable-read snapshot semantics
-                // within a transaction, so READ COMMITTED is strictly safer
-                // here.
                 Mysql::ATTR_INIT_COMMAND => 'SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED',
             ]) : [],
         ],
@@ -120,20 +110,18 @@ return [
             'charset' => env('DB_CHARSET', 'utf8'),
             'prefix' => '',
             'prefix_indexes' => true,
-            // 'encrypt' => env('DB_ENCRYPT', 'yes'),
-            // 'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', 'false'),
         ],
 
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | Migration Repository Table
+    | Таблица миграций
     |--------------------------------------------------------------------------
     |
-    | This table keeps track of all the migrations that have already run for
-    | your application. Using this information, we can determine which of
-    | the migrations on disk haven't actually been run on the database.
+    | Эта таблица отслеживает все миграции, которые уже были выполнены для
+    | приложения. На основе этой информации можно определить, какие миграции
+    | на диске ещё не были применены к базе данных.
     |
     */
 
@@ -144,12 +132,13 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Redis Databases
+    | Базы данных Redis
     |--------------------------------------------------------------------------
     |
-    | Redis is an open source, fast, and advanced key-value store that also
-    | provides a richer body of commands than a typical key-value system
-    | such as Memcached. You may define your connection settings here.
+    | Redis — быстрое продвинутое хранилище ключ-значение с открытым исходным
+    | кодом, которое предоставляет более широкий набор команд, чем типичная
+    | key-value система вроде Memcached. Здесь можно задать настройки
+    | подключения.
     |
     */
 

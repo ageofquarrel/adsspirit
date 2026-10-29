@@ -1,12 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit\Actions\Marketplace;
 
 use App\Actions\Marketplace\MapOrderSnapshotAction;
 use App\Enums\OrderStatus;
 use Tests\TestCase;
 
-class MapOrderSnapshotActionTest extends TestCase
+final class MapOrderSnapshotActionTest extends TestCase
 {
     private function loadOrder(string $exampleFile): array
     {
@@ -17,15 +19,12 @@ class MapOrderSnapshotActionTest extends TestCase
 
     public function test_it_maps_a_paid_order_without_shipment(): void
     {
-        // Arrange
         $raw = $this->loadOrder('order-paid.json');
         $action = new MapOrderSnapshotAction;
 
-        // Act
-        $snapshot = $action($raw);
+        $snapshot = $action->execute($raw);
 
-        // Assert
-        $this->assertSame('ord_7Q2KX9M4', $snapshot->id);
+        $this->assertSame('ord_7Q2KX9M4', $snapshot->externalId);
         $this->assertSame('MH-1048213', $snapshot->number);
         $this->assertSame(OrderStatus::Paid, $snapshot->status);
         $this->assertSame('RUB', $snapshot->currency);
@@ -47,14 +46,11 @@ class MapOrderSnapshotActionTest extends TestCase
 
     public function test_it_maps_a_shipped_order_with_shipment_details(): void
     {
-        // Arrange
         $raw = $this->loadOrder('order-shipped.json');
         $action = new MapOrderSnapshotAction;
 
-        // Act
-        $snapshot = $action($raw);
+        $snapshot = $action->execute($raw);
 
-        // Assert
         $this->assertSame(OrderStatus::Shipped, $snapshot->status);
         $this->assertSame('СДЭК', $snapshot->shipmentCarrier);
         $this->assertSame('1098765432', $snapshot->shipmentTrackingNumber);
@@ -63,14 +59,11 @@ class MapOrderSnapshotActionTest extends TestCase
 
     public function test_it_maps_a_cancelled_order_with_a_reason(): void
     {
-        // Arrange
         $raw = $this->loadOrder('order-cancelled.json');
         $action = new MapOrderSnapshotAction;
 
-        // Act
-        $snapshot = $action($raw);
+        $snapshot = $action->execute($raw);
 
-        // Assert
         $this->assertSame(OrderStatus::Cancelled, $snapshot->status);
         $this->assertSame('Покупатель отказался от заказа', $snapshot->cancelReason);
         $this->assertNotNull($snapshot->cancelledAt);
@@ -79,14 +72,11 @@ class MapOrderSnapshotActionTest extends TestCase
 
     public function test_it_maps_a_freshly_created_order_with_null_optional_fields(): void
     {
-        // Arrange
         $raw = $this->loadOrder('order-created.json');
         $action = new MapOrderSnapshotAction;
 
-        // Act
-        $snapshot = $action($raw);
+        $snapshot = $action->execute($raw);
 
-        // Assert
         $this->assertSame(OrderStatus::Created, $snapshot->status);
         $this->assertNull($snapshot->paidAt);
         $this->assertNull($snapshot->cancelledAt);

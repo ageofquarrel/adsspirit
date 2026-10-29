@@ -1,16 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Actions\Marketplace;
 
 /**
- * Verifies a MarketHub webhook signature: HMAC-SHA256 of "{timestamp}.{raw body}"
- * with the seller's secret, and rejects timestamps too far from now.
+ * Проверяет подпись вебхука MarketHub: HMAC-SHA256 от строки
+ * "{timestamp}.{тело запроса}" с секретом продавца, отклоняет запросы
+ * со слишком старым timestamp.
  *
  * @see /task/marketplace-webhooks.md
  */
 final class VerifyWebhookSignatureAction
 {
-    public function __invoke(string $rawBody, string $timestamp, string $signature): bool
+    public function execute(string $rawBody, string $timestamp, string $signature): bool
     {
         if (! ctype_digit($timestamp)) {
             return false;

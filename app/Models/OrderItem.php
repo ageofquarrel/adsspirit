@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use Database\Factories\OrderItemFactory;
@@ -11,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Guarded([])]
 #[UseFactory(OrderItemFactory::class)]
-class OrderItem extends Model
+final class OrderItem extends Model
 {
     use HasFactory;
 

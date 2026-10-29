@@ -7,25 +7,23 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Run the migrations.
+     * Применяет миграцию.
      */
     public function up(): void
     {
         Schema::create('order_notifications', function (Blueprint $table) {
             $table->id();
-            $table->string('order_id');
-            // One of the OrderStatus values this email is about (paid/shipped/cancelled).
+            $table->foreignId('order_id')->constrained('orders')->cascadeOnDelete();
             $table->string('type');
             $table->dateTime('sent_at');
             $table->timestamps();
 
-            $table->foreign('order_id')->references('id')->on('orders')->cascadeOnDelete();
             $table->unique(['order_id', 'type']);
         });
     }
 
     /**
-     * Reverse the migrations.
+     * Откатывает миграцию.
      */
     public function down(): void
     {

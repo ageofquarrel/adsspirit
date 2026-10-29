@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\Orders;
 
 use App\Enums\OrderStatus;
@@ -8,18 +10,15 @@ use App\Models\OrderItem;
 use Carbon\CarbonImmutable;
 use Tests\TestCase;
 
-class OrderControllerTest extends TestCase
+final class OrderControllerTest extends TestCase
 {
     public function test_it_lists_orders_newest_first_in_the_laravel_pagination_shape(): void
     {
-        // Arrange
-        Order::factory()->create(['id' => 'ord_old', 'created_at' => CarbonImmutable::parse('2026-01-01T00:00:00+00:00')]);
-        Order::factory()->create(['id' => 'ord_new', 'created_at' => CarbonImmutable::parse('2026-01-02T00:00:00+00:00')]);
+        Order::factory()->create(['external_id' => 'ord_old', 'created_at' => CarbonImmutable::parse('2026-01-01T00:00:00+00:00')]);
+        Order::factory()->create(['external_id' => 'ord_new', 'created_at' => CarbonImmutable::parse('2026-01-02T00:00:00+00:00')]);
 
-        // Act
         $response = $this->getJson('/api/orders');
 
-        // Assert
         $response->assertOk();
         $response->assertJsonStructure([
             'data' => [['id', 'number', 'status', 'customer' => ['email', 'name'], 'total', 'currency', 'created_at', 'updated_at']],
@@ -32,41 +31,32 @@ class OrderControllerTest extends TestCase
 
     public function test_it_filters_by_status(): void
     {
-        // Arrange
-        Order::factory()->create(['id' => 'ord_created']);
-        Order::factory()->create(['id' => 'ord_paid', 'status' => OrderStatus::Paid, 'paid_at' => now()]);
+        Order::factory()->create(['external_id' => 'ord_created']);
+        Order::factory()->create(['external_id' => 'ord_paid', 'status' => OrderStatus::Paid, 'paid_at' => now()]);
 
-        // Act
         $response = $this->getJson('/api/orders?status=paid');
 
-        // Assert
         $response->assertOk();
         $this->assertSame(['ord_paid'], collect($response->json('data'))->pluck('id')->all());
     }
 
     public function test_it_filters_by_email_case_insensitively(): void
     {
-        // Arrange
-        Order::factory()->create(['id' => 'ord_1', 'customer_email' => 'Anna@Example.com']);
-        Order::factory()->create(['id' => 'ord_2', 'customer_email' => 'other@example.com']);
+        Order::factory()->create(['external_id' => 'ord_1', 'customer_email' => 'Anna@Example.com']);
+        Order::factory()->create(['external_id' => 'ord_2', 'customer_email' => 'other@example.com']);
 
-        // Act
         $response = $this->getJson('/api/orders?email=anna@example.com');
 
-        // Assert
         $response->assertOk();
         $this->assertSame(['ord_1'], collect($response->json('data'))->pluck('id')->all());
     }
 
     public function test_it_paginates(): void
     {
-        // Arrange
         Order::factory()->count(3)->create();
 
-        // Act
         $response = $this->getJson('/api/orders?per_page=2&page=2');
 
-        // Assert
         $response->assertOk();
         $this->assertCount(1, $response->json('data'));
         $this->assertSame(2, $response->json('meta.current_page'));
@@ -75,18 +65,15 @@ class OrderControllerTest extends TestCase
 
     public function test_it_rejects_an_invalid_status_filter(): void
     {
-        // Act
         $response = $this->getJson('/api/orders?status=refunded');
 
-        // Assert
         $response->assertStatus(422);
     }
 
     public function test_it_shows_an_order_with_items_and_history(): void
     {
-        // Arrange
         $order = Order::factory()->create([
-            'id' => 'ord_7Q2KX9M4',
+            'external_id' => 'ord_7Q2KX9M4',
             'number' => 'MH-1048213',
             'status' => OrderStatus::Shipped,
             'shipment_carrier' => 'СДЭК',
@@ -97,10 +84,8 @@ class OrderControllerTest extends TestCase
         $order->statusHistory()->create(['status' => OrderStatus::Created, 'changed_at' => CarbonImmutable::parse('2026-01-01T00:00:00+00:00')]);
         $order->statusHistory()->create(['status' => OrderStatus::Shipped, 'changed_at' => CarbonImmutable::parse('2026-01-02T00:00:00+00:00')]);
 
-        // Act
-        $response = $this->getJson("/api/orders/{$order->id}");
+        $response = $this->getJson("/api/orders/{$order->external_id}");
 
-        // Assert
         $response->assertOk();
         $response->assertJsonPath('data.id', 'ord_7Q2KX9M4');
         $response->assertJsonPath('data.shipment.carrier', 'СДЭК');
@@ -111,10 +96,8 @@ class OrderControllerTest extends TestCase
 
     public function test_it_returns_404_for_a_missing_order(): void
     {
-        // Act
         $response = $this->getJson('/api/orders/ord_missing');
 
-        // Assert
         $response->assertStatus(404);
     }
 }

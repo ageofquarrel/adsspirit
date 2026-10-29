@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Repositories;
 
 use App\Enums\OrderStatus;
@@ -8,7 +10,7 @@ use Illuminate\Support\Facades\DB;
 
 final class OrderNotificationRepository implements OrderNotificationRepositoryInterface
 {
-    public function reserve(string $orderId, OrderStatus $type): bool
+    public function reserve(int $orderId, OrderStatus $type): bool
     {
         $inserted = DB::table('order_notifications')->insertOrIgnore([
             'order_id' => $orderId,

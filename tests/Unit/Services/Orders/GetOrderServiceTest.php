@@ -1,39 +1,32 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit\Services\Orders;
 
 use App\Models\Order;
 use App\Services\Orders\GetOrderService;
-use Tests\Doubles\Repositories\OrderRepositoryMock;
+use Tests\Mocks\Internal\App\Repositories\Contracts\OrderRepositoryMock;
 use Tests\TestCase;
 
-class GetOrderServiceTest extends TestCase
+final class GetOrderServiceTest extends TestCase
 {
     public function test_it_returns_the_order_from_the_repository(): void
     {
-        // Arrange
-        $repository = new OrderRepositoryMock;
-        $repository->findWithDetailsReturn = new Order(['id' => 'ord_1']);
-        $service = new GetOrderService($repository);
+        $order = new Order(['external_id' => 'ord_1']);
+        OrderRepositoryMock::returnFindWithDetails($order);
 
-        // Act
-        $order = $service->handle('ord_1');
+        $result = app(GetOrderService::class)->handle('ord_1');
 
-        // Assert
-        $this->assertSame($repository->findWithDetailsReturn, $order);
+        $this->assertSame($order, $result);
     }
 
     public function test_it_returns_null_when_the_repository_finds_nothing(): void
     {
-        // Arrange
-        $repository = new OrderRepositoryMock;
-        $repository->findWithDetailsReturn = null;
-        $service = new GetOrderService($repository);
+        OrderRepositoryMock::returnFindWithDetails(null);
 
-        // Act
-        $order = $service->handle('ord_missing');
+        $result = app(GetOrderService::class)->handle('ord_missing');
 
-        // Assert
-        $this->assertNull($order);
+        $this->assertNull($result);
     }
 }

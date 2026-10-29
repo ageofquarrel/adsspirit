@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Middleware;
 
 use App\Actions\Marketplace\VerifyWebhookSignatureAction;
@@ -7,10 +9,16 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-final class VerifyMarketplaceWebhookSignature
+final readonly class VerifyMarketplaceWebhookSignature
 {
+    private const string MISSING_HEADERS_MESSAGE = 'Missing webhook headers.';
+
+    private const string UNSUPPORTED_SIGNATURE_FORMAT_MESSAGE = 'Unsupported signature format.';
+
+    private const string INVALID_SIGNATURE_MESSAGE = 'Invalid webhook signature.';
+
     public function __construct(
-        private readonly VerifyWebhookSignatureAction $verifySignature,
+        private VerifyWebhookSignatureAction $verifySignature,
     ) {}
 
     public function handle(Request $request, Closure $next): Response
@@ -19,15 +27,24 @@ final class VerifyMarketplaceWebhookSignature
         $signature = $request->header('X-Webhook-Signature');
 
         if ($request->header('X-Webhook-Id') === null || $timestamp === null || $signature === null) {
-            return response()->json(['message' => 'Missing webhook headers.'], 400);
+            return response()->json(
+                ['message' => self::MISSING_HEADERS_MESSAGE],
+                Response::HTTP_BAD_REQUEST
+            );
         }
 
         if (! str_starts_with($signature, 'sha256=')) {
-            return response()->json(['message' => 'Unsupported signature format.'], 400);
+            return response()->json(
+                ['message' => self::UNSUPPORTED_SIGNATURE_FORMAT_MESSAGE],
+                Response::HTTP_BAD_REQUEST
+            );
         }
 
-        if (! ($this->verifySignature)($request->getContent(), $timestamp, $signature)) {
-            return response()->json(['message' => 'Invalid webhook signature.'], 401);
+        if (! $this->verifySignature->execute($request->getContent(), $timestamp, $signature)) {
+            return response()->json(
+                ['message' => self::INVALID_SIGNATURE_MESSAGE],
+                Response::HTTP_UNAUTHORIZED
+            );
         }
 
         return $next($request);

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\Notifications;
 
 use App\Enums\OrderStatus;
@@ -14,9 +16,10 @@ use Illuminate\Support\Facades\Mail;
 use InvalidArgumentException;
 
 /**
- * Runs inside the queue worker, so it re-checks the order's *current* status
- * before sending: by the time this job runs, a later event may already have
- * moved the order somewhere that makes this email wrong (e.g. cancelled).
+ * Выполняется внутри воркера очереди, поэтому перед отправкой заново
+ * проверяет *текущий* статус заказа: к моменту выполнения более позднее
+ * событие могло уже перевести заказ в состояние, при котором это письмо
+ * станет неверным (например, cancelled).
  */
 class SendOrderStatusEmailService
 {
@@ -39,7 +42,7 @@ class SendOrderStatusEmailService
             return;
         }
 
-        if (! $this->notificationRepository->reserve($orderId, $type)) {
+        if (! $this->notificationRepository->reserve($order->id, $type)) {
             return;
         }
 
@@ -55,8 +58,6 @@ class SendOrderStatusEmailService
         }
 
         return match ($type) {
-            // Telling the customer "paid"/"shipped" would contradict an order
-            // that has since been cancelled.
             OrderStatus::Paid, OrderStatus::Shipped => $current !== OrderStatus::Cancelled,
             OrderStatus::Cancelled => true,
             default => false,

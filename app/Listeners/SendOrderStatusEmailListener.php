@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Listeners;
 
 use App\Enums\OrderStatus;
@@ -7,7 +9,7 @@ use App\Events\OrderStatusChanged;
 use App\Services\Notifications\SendOrderStatusEmailService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
-class SendOrderStatusEmailListener implements ShouldQueue
+final class SendOrderStatusEmailListener implements ShouldQueue
 {
     private const array NOTIFIABLE_STATUSES = [
         OrderStatus::Paid,
@@ -20,11 +22,12 @@ class SendOrderStatusEmailListener implements ShouldQueue
     ) {}
 
     /**
-     * Skips queuing entirely for statuses with no email (created/delivered),
-     * instead of wasting a queue round-trip just to no-op. The *correctness*
-     * guard — re-checking the order's current status before actually
-     * sending — lives in {@see SendOrderStatusEmailService} itself, since
-     * that has to happen at execution time, not at dispatch time.
+     * Полностью пропускает постановку в очередь для статусов без письма
+     * (created/delivered), чтобы не тратить поход в очередь впустую.
+     * Проверка корректности — повторное считывание текущего статуса
+     * заказа перед реальной отправкой — находится в самом
+     * {@see SendOrderStatusEmailService}, поскольку это должно происходить
+     * в момент выполнения, а не постановки в очередь.
      */
     public function shouldQueue(OrderStatusChanged $event): bool
     {

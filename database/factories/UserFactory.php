@@ -10,15 +10,15 @@ use Illuminate\Support\Str;
 /**
  * @extends Factory<User>
  */
-class UserFactory extends Factory
+final class UserFactory extends Factory
 {
     /**
-     * The current password being used by the factory.
+     * Текущий пароль, используемый фабрикой.
      */
     protected static ?string $password;
 
     /**
-     * Define the model's default state.
+     * Определяет состояние модели по умолчанию.
      *
      * @return array<string, mixed>
      */
@@ -28,13 +28,13 @@ class UserFactory extends Factory
             'name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
-            'password' => static::$password ??= Hash::make('password'),
+            'password' => self::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
         ];
     }
 
     /**
-     * Indicate that the model's email address should be unverified.
+     * Помечает email модели как неподтверждённый.
      */
     public function unverified(): static
     {

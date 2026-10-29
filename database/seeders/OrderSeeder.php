@@ -9,11 +9,11 @@ use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
 
 /**
- * Fakes a realistic spread of orders across every status, each with a
- * plausible status history and items, so the admin UI and API have
- * something to actually filter/browse during manual testing.
+ * Генерирует фейковыми данными реалистичный набор заказов по всем
+ * статусам, с правдоподобной историей статусов и позициями — чтобы
+ * в админке и API было что фильтровать и листать при ручном тестировании.
  */
-class OrderSeeder extends Seeder
+final class OrderSeeder extends Seeder
 {
     private const int ORDERS_PER_STATUS = 8;
 
@@ -82,7 +82,6 @@ class OrderSeeder extends Seeder
             OrderStatus::Delivered => [
                 OrderStatus::Created, OrderStatus::Paid, OrderStatus::Shipped, OrderStatus::Delivered,
             ],
-            // Half the time it was already paid before being cancelled (refund-eligible).
             OrderStatus::Cancelled => fake()->boolean(50)
                 ? [OrderStatus::Created, OrderStatus::Paid, OrderStatus::Cancelled]
                 : [OrderStatus::Created, OrderStatus::Cancelled],

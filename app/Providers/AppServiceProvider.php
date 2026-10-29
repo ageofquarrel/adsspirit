@@ -1,24 +1,20 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 
-class AppServiceProvider extends ServiceProvider
+final class AppServiceProvider extends ServiceProvider
 {
     /**
-     * Register any application services.
+     * Регистрирует сервисы приложения.
      */
-    public function register(): void
-    {
-        //
-    }
+    public function register(): void {}
 
     /**
-     * Bootstrap any application services.
+     * Запускает инициализацию сервисов приложения.
      */
-    public function boot(): void
-    {
-        //
-    }
+    public function boot(): void {}
 }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use App\Enums\OrderStatus;
@@ -11,10 +13,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Table(keyType: 'string', incrementing: false, timestamps: false)]
+#[Table(timestamps: false)]
 #[Guarded([])]
 #[UseFactory(OrderFactory::class)]
-class Order extends Model
+final class Order extends Model
 {
     use HasFactory;
 

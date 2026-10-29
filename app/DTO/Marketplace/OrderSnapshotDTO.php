@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\DTO\Marketplace;
 
 use App\Enums\OrderStatus;
@@ -11,7 +13,7 @@ final readonly class OrderSnapshotDTO
      * @param  OrderItemSnapshotDTO[]  $items
      */
     public function __construct(
-        public string $id,
+        public string $externalId,
         public string $number,
         public OrderStatus $status,
         public string $currency,

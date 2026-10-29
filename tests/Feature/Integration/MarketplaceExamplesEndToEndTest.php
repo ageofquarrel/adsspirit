@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\Integration;
 
 use App\Enums\OrderStatus;
@@ -11,12 +13,12 @@ use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 /**
- * Drives every fixture under task/examples/ through the real HTTP endpoint,
- * signed exactly the way task/examples/send-event.php signs them, and checks
- * the whole pipeline end to end: webhook receipt -> order state -> customer
- * emails -> the admin API's view of the result.
+ * Прогоняет каждую заглушку из task/examples/ через реальный HTTP-эндпоинт,
+ * подписывая её точно так же, как task/examples/send-event.php, и проверяет
+ * весь конвейер целиком: приём вебхука -> состояние заказа -> письма
+ * покупателю -> то, что видно через API админки.
  */
-class MarketplaceExamplesEndToEndTest extends TestCase
+final class MarketplaceExamplesEndToEndTest extends TestCase
 {
     private const string SECRET = 'whsec_test_secret';
 
@@ -48,17 +50,13 @@ class MarketplaceExamplesEndToEndTest extends TestCase
     {
         Mail::fake();
 
-        // Act — the real-world order of delivery: MH-1048213 goes through its
-        // whole lifecycle, MH-1048377 arrives separately already paid and is
-        // then cancelled with a refund due.
         $this->send('order-created.json', 0);
         $this->send('order-updated.json', 1);
         $this->send('order-paid.json', 2);
         $this->send('order-shipped.json', 3);
         $this->send('order-cancelled.json', 4);
 
-        // Assert: order MH-1048213 reached "shipped" with the right history.
-        $shipped = Order::query()->with('items', 'statusHistory')->findOrFail('ord_7Q2KX9M4');
+        $shipped = Order::query()->with('items', 'statusHistory')->where('external_id', 'ord_7Q2KX9M4')->firstOrFail();
         $this->assertSame(OrderStatus::Shipped, $shipped->status);
         $this->assertSame(
             [OrderStatus::Created, OrderStatus::Paid, OrderStatus::Shipped],
@@ -67,22 +65,18 @@ class MarketplaceExamplesEndToEndTest extends TestCase
         $this->assertSame('СДЭК', $shipped->shipment_carrier);
         $this->assertCount(2, $shipped->items);
 
-        // Assert: order MH-1048377 was cancelled, refund-eligible (it was paid).
-        $cancelled = Order::query()->findOrFail('ord_3HV8PW2C');
+        $cancelled = Order::query()->where('external_id', 'ord_3HV8PW2C')->firstOrFail();
         $this->assertSame(OrderStatus::Cancelled, $cancelled->status);
         $this->assertNotNull($cancelled->paid_at);
         $this->assertSame('Покупатель отказался от заказа', $cancelled->cancel_reason);
 
-        // Assert: exactly the three documented emails went out, no duplicates,
-        // and nothing for "created"/"updated" (not in the notification table).
         Mail::assertSent(OrderPaidMail::class, 1);
         Mail::assertSent(OrderShippedMail::class, 1);
         Mail::assertSent(OrderCancelledMail::class, function (OrderCancelledMail $mail) {
-            return $mail->order->id === 'ord_3HV8PW2C';
+            return $mail->order->external_id === 'ord_3HV8PW2C';
         });
         Mail::assertSent(OrderCancelledMail::class, 1);
 
-        // Assert: the admin API reflects both orders correctly.
         $this->getJson('/api/orders')
             ->assertOk()
             ->assertJsonCount(2, 'data');
@@ -108,13 +102,10 @@ class MarketplaceExamplesEndToEndTest extends TestCase
 
         $ordersBefore = Order::query()->count();
 
-        // Act — MarketHub redelivers the exact same events (same ids, fresh
-        // timestamps/signatures, as a real retry would).
         foreach ($files as $index => $file) {
             $this->send($file, 100 + $index);
         }
 
-        // Assert — idempotent: no new orders, no duplicate emails.
         $this->assertSame($ordersBefore, Order::query()->count());
         Mail::assertSent(OrderPaidMail::class, 1);
         Mail::assertSent(OrderShippedMail::class, 1);

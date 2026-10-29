@@ -10,7 +10,7 @@ use Illuminate\Support\Str;
 /**
  * @extends Factory<OrderItem>
  */
-class OrderItemFactory extends Factory
+final class OrderItemFactory extends Factory
 {
     public function definition(): array
     {

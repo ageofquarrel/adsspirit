@@ -10,14 +10,14 @@ use Illuminate\Support\Str;
 /**
  * @extends Factory<Order>
  */
-class OrderFactory extends Factory
+final class OrderFactory extends Factory
 {
     public function definition(): array
     {
         $createdAt = fake()->dateTimeBetween('-30 days', '-1 days');
 
         return [
-            'id' => 'ord_'.Str::upper(Str::random(8)),
+            'external_id' => 'ord_'.Str::upper(Str::random(8)),
             'number' => 'MH-'.fake()->unique()->numberBetween(1000000, 9999999),
             'status' => OrderStatus::Created,
             'currency' => 'RUB',

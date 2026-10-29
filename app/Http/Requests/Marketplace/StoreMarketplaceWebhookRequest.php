@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Requests\Marketplace;
 
 use App\Enums\OrderStatus;
@@ -10,7 +12,7 @@ use Illuminate\Validation\Rule;
 final class StoreMarketplaceWebhookRequest extends FormRequest
 {
     /**
-     * The webhook signature is already verified by
+     * Подпись вебхука уже проверена в
      * {@see VerifyMarketplaceWebhookSignature}.
      */
     public function authorize(): bool

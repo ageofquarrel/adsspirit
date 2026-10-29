@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Repositories;
 
 use App\DTO\Marketplace\ReceiveWebhookEventDTO;
@@ -20,7 +22,12 @@ final class MarketplaceWebhookEventRepository implements MarketplaceWebhookEvent
         return MarketplaceWebhookEvent::query()->create([
             'event_id' => $data->eventId,
             'type' => $data->type,
-            'payload' => $data->payload,
+            'payload' => [
+                'id' => $data->payload->id,
+                'type' => $data->payload->type,
+                'created_at' => $data->payload->createdAt,
+                'data' => ['order' => $data->payload->order],
+            ],
         ]);
     }
 

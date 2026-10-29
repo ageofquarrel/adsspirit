@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Providers;
 
 use App\Repositories\Contracts\MarketplaceWebhookEventRepositoryInterface;
@@ -10,7 +12,7 @@ use App\Repositories\OrderNotificationRepository;
 use App\Repositories\OrderRepository;
 use Illuminate\Support\ServiceProvider;
 
-class RepositoryServiceProvider extends ServiceProvider
+final class RepositoryServiceProvider extends ServiceProvider
 {
     /**
      * @var array<class-string, class-string>
