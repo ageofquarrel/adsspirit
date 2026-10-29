@@ -4,6 +4,7 @@ namespace Tests\Unit\Repositories;
 
 use App\DTO\Marketplace\OrderItemSnapshotDTO;
 use App\DTO\Marketplace\OrderSnapshotDTO;
+use App\DTO\Orders\ListOrdersFiltersDTO;
 use App\Enums\OrderStatus;
 use App\Models\Order;
 use App\Repositories\OrderRepository;
@@ -148,5 +149,81 @@ class OrderRepositoryTest extends TestCase
 
         // Assert
         $this->assertSame(1, Order::query()->count());
+    }
+
+    public function test_find_with_details_eager_loads_items_and_history(): void
+    {
+        // Arrange
+        $repository = new OrderRepository;
+        $repository->applySnapshot($this->snapshot(), CarbonImmutable::now());
+
+        // Act
+        $order = $repository->findWithDetails('ord_1');
+
+        // Assert
+        $this->assertTrue($order->relationLoaded('items'));
+        $this->assertTrue($order->relationLoaded('statusHistory'));
+    }
+
+    public function test_paginate_filters_by_status(): void
+    {
+        // Arrange
+        $repository = new OrderRepository;
+        $repository->applySnapshot($this->snapshot(['id' => 'ord_1']), CarbonImmutable::now());
+        $repository->applySnapshot(
+            $this->snapshot(['id' => 'ord_2', 'number' => 'MH-2', 'status' => OrderStatus::Paid, 'paidAt' => CarbonImmutable::now()]),
+            CarbonImmutable::now(),
+        );
+
+        // Act
+        $result = $repository->paginate(new ListOrdersFiltersDTO(OrderStatus::Paid, null, 1, 20));
+
+        // Assert
+        $this->assertSame(1, $result->total());
+        $this->assertSame('ord_2', $result->items()[0]->id);
+    }
+
+    public function test_paginate_filters_by_email_case_insensitively(): void
+    {
+        // Arrange
+        $repository = new OrderRepository;
+        Order::factory()->create(['id' => 'ord_1', 'customer_email' => 'Anna@Example.com']);
+        Order::factory()->create(['id' => 'ord_2', 'customer_email' => 'other@example.com']);
+
+        // Act
+        $result = $repository->paginate(new ListOrdersFiltersDTO(null, 'anna@example.com', 1, 20));
+
+        // Assert
+        $this->assertSame(1, $result->total());
+        $this->assertSame('ord_1', $result->items()[0]->id);
+    }
+
+    public function test_paginate_orders_by_created_at_descending(): void
+    {
+        // Arrange
+        $repository = new OrderRepository;
+        Order::factory()->create(['id' => 'ord_old', 'created_at' => CarbonImmutable::parse('2026-01-01T00:00:00+00:00')]);
+        Order::factory()->create(['id' => 'ord_new', 'created_at' => CarbonImmutable::parse('2026-01-02T00:00:00+00:00')]);
+
+        // Act
+        $result = $repository->paginate(new ListOrdersFiltersDTO(null, null, 1, 20));
+
+        // Assert
+        $this->assertSame(['ord_new', 'ord_old'], collect($result->items())->pluck('id')->all());
+    }
+
+    public function test_paginate_respects_page_and_per_page(): void
+    {
+        // Arrange
+        $repository = new OrderRepository;
+        Order::factory()->count(3)->create();
+
+        // Act
+        $result = $repository->paginate(new ListOrdersFiltersDTO(null, null, 2, 2));
+
+        // Assert
+        $this->assertSame(3, $result->total());
+        $this->assertSame(2, $result->currentPage());
+        $this->assertCount(1, $result->items());
     }
 }

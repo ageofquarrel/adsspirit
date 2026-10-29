@@ -3,10 +3,12 @@
 namespace Tests\Doubles\Repositories;
 
 use App\DTO\Marketplace\OrderSnapshotDTO;
+use App\DTO\Orders\ListOrdersFiltersDTO;
 use App\Models\Order;
 use App\Repositories\Contracts\OrderRepositoryInterface;
 use App\Repositories\OrderRepository;
 use Carbon\CarbonInterface;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 /**
  * Test double for {@see OrderRepository}, which is already
@@ -16,6 +18,12 @@ use Carbon\CarbonInterface;
 final class OrderRepositoryMock implements OrderRepositoryInterface
 {
     public ?Order $findReturn = null;
+
+    public ?Order $findWithDetailsReturn = null;
+
+    public ?LengthAwarePaginator $paginateReturn = null;
+
+    public ?ListOrdersFiltersDTO $lastFilters = null;
 
     public ?Order $applySnapshotReturn = null;
 
@@ -28,6 +36,18 @@ final class OrderRepositoryMock implements OrderRepositoryInterface
     public function find(string $id): ?Order
     {
         return $this->findReturn;
+    }
+
+    public function findWithDetails(string $id): ?Order
+    {
+        return $this->findWithDetailsReturn;
+    }
+
+    public function paginate(ListOrdersFiltersDTO $filters): LengthAwarePaginator
+    {
+        $this->lastFilters = $filters;
+
+        return $this->paginateReturn ?? new LengthAwarePaginator([], 0, $filters->perPage, $filters->page);
     }
 
     public function applySnapshot(OrderSnapshotDTO $data, CarbonInterface $statusChangedAt): Order

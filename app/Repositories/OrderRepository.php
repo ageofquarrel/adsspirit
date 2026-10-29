@@ -3,16 +3,36 @@
 namespace App\Repositories;
 
 use App\DTO\Marketplace\OrderSnapshotDTO;
+use App\DTO\Orders\ListOrdersFiltersDTO;
 use App\Models\Order;
 use App\Repositories\Contracts\OrderRepositoryInterface;
 use Carbon\CarbonInterface;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 final class OrderRepository implements OrderRepositoryInterface
 {
     public function find(string $id): ?Order
     {
         return Order::query()->find($id);
+    }
+
+    public function findWithDetails(string $id): ?Order
+    {
+        return Order::query()->with(['items', 'statusHistory'])->find($id);
+    }
+
+    public function paginate(ListOrdersFiltersDTO $filters): LengthAwarePaginator
+    {
+        return Order::query()
+            ->when($filters->status, fn ($query, $status) => $query->where('status', $status))
+            ->when(
+                $filters->email,
+                fn ($query, $email) => $query->whereRaw('LOWER(customer_email) = ?', [Str::lower($email)]),
+            )
+            ->orderByDesc('created_at')
+            ->paginate(perPage: $filters->perPage, page: $filters->page);
     }
 
     public function applySnapshot(OrderSnapshotDTO $data, CarbonInterface $statusChangedAt): Order
