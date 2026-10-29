@@ -8,11 +8,11 @@ use App\Repositories\Contracts\MarketplaceWebhookEventRepositoryInterface;
 
 final class MarketplaceWebhookEventRepository implements MarketplaceWebhookEventRepositoryInterface
 {
-    public function existsByEventId(string $eventId): bool
+    public function findByEventId(string $eventId): ?MarketplaceWebhookEvent
     {
         return MarketplaceWebhookEvent::query()
             ->where('event_id', $eventId)
-            ->exists();
+            ->first();
     }
 
     public function create(ReceiveWebhookEventDTO $data): MarketplaceWebhookEvent

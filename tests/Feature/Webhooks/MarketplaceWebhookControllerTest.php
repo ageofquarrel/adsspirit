@@ -172,6 +172,40 @@ class MarketplaceWebhookControllerTest extends TestCase
         );
     }
 
+    public function test_a_retry_after_a_crash_between_storing_and_applying_still_completes(): void
+    {
+        // Arrange — simulate a worker crash: the event got stored (e.g. by a
+        // previous, failed delivery attempt) but never marked processed, so
+        // the order was never actually created.
+        $body = file_get_contents(base_path('task/examples/order-paid.json'));
+        $event = json_decode($body, true);
+        MarketplaceWebhookEvent::query()->create([
+            'event_id' => $event['id'],
+            'type' => $event['type'],
+            'payload' => $event,
+            'processed_at' => null,
+        ]);
+        $signed = $this->sign($body);
+
+        // Act — MarketHub retries with the same event id, a new timestamp/signature.
+        $response = $this->postWebhook($body, [
+            'X-Webhook-Id' => $event['id'],
+            'X-Webhook-Timestamp' => $signed['timestamp'],
+            'X-Webhook-Signature' => $signed['signature'],
+        ]);
+
+        // Assert
+        $response->assertOk();
+        $this->assertSame(
+            1,
+            MarketplaceWebhookEvent::query()->where('event_id', $event['id'])->count(),
+        );
+        $this->assertNotNull(
+            MarketplaceWebhookEvent::query()->where('event_id', $event['id'])->first()->processed_at,
+        );
+        $this->assertDatabaseHas('orders', ['id' => $event['data']['order']['id']]);
+    }
+
     public function test_a_realistic_sequence_of_events_builds_up_the_order_and_its_history(): void
     {
         // Arrange & Act — created, then paid, then shipped, as they would really arrive.

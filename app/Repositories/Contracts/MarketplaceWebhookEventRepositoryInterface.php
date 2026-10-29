@@ -7,7 +7,7 @@ use App\Models\MarketplaceWebhookEvent;
 
 interface MarketplaceWebhookEventRepositoryInterface
 {
-    public function existsByEventId(string $eventId): bool;
+    public function findByEventId(string $eventId): ?MarketplaceWebhookEvent;
 
     public function create(ReceiveWebhookEventDTO $data): MarketplaceWebhookEvent;
 

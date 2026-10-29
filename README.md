@@ -46,6 +46,16 @@ Laravel-сервис для приёма вебхуков маркетплейс
 `APP_PORT`, `FORWARD_DB_PORT`, `FORWARD_MAILPIT_PORT`, `FORWARD_MAILPIT_SMTP_PORT`
 (см. `docker-compose.yml`).
 
+## API
+
+- `POST /api/webhooks/marketplace` — приём вебхуков MarketHub (подпись проверяется
+  `MARKETPLACE_WEBHOOK_SECRET`; пример отправки — `task/examples/send-event.php`).
+- `GET /api/orders` — список заказов, фильтры `status`/`email`, пагинация `page`/`per_page`.
+- `GET /api/orders/{id}` — карточка заказа с позициями и историей статусов.
+
+Контракт — в [`task/openapi.yaml`](task/openapi.yaml). Принятые решения и допущения — в
+[`DECISIONS.md`](DECISIONS.md).
+
 ## Полезные команды
 
 ```bash

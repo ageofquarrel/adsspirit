@@ -9,7 +9,7 @@ use Tests\TestCase;
 
 class MarketplaceWebhookEventRepositoryTest extends TestCase
 {
-    public function test_exists_by_event_id_reflects_stored_events(): void
+    public function test_find_by_event_id_returns_the_stored_event(): void
     {
         // Arrange
         MarketplaceWebhookEvent::query()->create([
@@ -20,8 +20,25 @@ class MarketplaceWebhookEventRepositoryTest extends TestCase
         $repository = new MarketplaceWebhookEventRepository;
 
         // Act & Assert
-        $this->assertTrue($repository->existsByEventId('evt_1'));
-        $this->assertFalse($repository->existsByEventId('evt_2'));
+        $this->assertSame('order.paid', $repository->findByEventId('evt_1')->type);
+        $this->assertNull($repository->findByEventId('evt_2'));
+    }
+
+    public function test_mark_processed_sets_the_timestamp(): void
+    {
+        // Arrange
+        MarketplaceWebhookEvent::query()->create([
+            'event_id' => 'evt_1',
+            'type' => 'order.paid',
+            'payload' => ['id' => 'evt_1'],
+        ]);
+        $repository = new MarketplaceWebhookEventRepository;
+
+        // Act
+        $repository->markProcessed('evt_1');
+
+        // Assert
+        $this->assertNotNull($repository->findByEventId('evt_1')->processed_at);
     }
 
     public function test_create_persists_the_event_with_its_payload(): void

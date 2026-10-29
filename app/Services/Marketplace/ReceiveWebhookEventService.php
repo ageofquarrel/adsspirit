@@ -12,19 +12,25 @@ final readonly class ReceiveWebhookEventService
     ) {}
 
     /**
-     * Persists the event unless it has already been received before.
+     * Persists the event the first time it's seen. If it was already stored
+     * by an earlier delivery attempt but never finished processing (e.g. the
+     * worker crashed between storing it and applying it to the order), this
+     * does *not* skip it — only a fully processed event is treated as a
+     * no-op duplicate, so a MarketHub retry can still complete the work.
      *
-     * @return bool `true` when the event is a duplicate (already stored earlier).
+     * @return bool `true` when the event was already fully processed before.
      */
     public function handle(ReceiveWebhookEventDTO $data): bool
     {
-        if ($this->repository->existsByEventId($data->eventId)) {
-            return true;
+        $existing = $this->repository->findByEventId($data->eventId);
+
+        if ($existing === null) {
+            $this->repository->create($data);
+
+            return false;
         }
 
-        $this->repository->create($data);
-
-        return false;
+        return $existing->processed_at !== null;
     }
 
     public function markProcessed(string $eventId): void

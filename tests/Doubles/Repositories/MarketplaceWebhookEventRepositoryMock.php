@@ -14,7 +14,7 @@ use App\Repositories\MarketplaceWebhookEventRepository;
  */
 final class MarketplaceWebhookEventRepositoryMock implements MarketplaceWebhookEventRepositoryInterface
 {
-    public bool $existsByEventIdReturn = false;
+    public ?MarketplaceWebhookEvent $findByEventIdReturn = null;
 
     public int $createCallCount = 0;
 
@@ -23,9 +23,9 @@ final class MarketplaceWebhookEventRepositoryMock implements MarketplaceWebhookE
     /** @var string[] */
     public array $markedProcessed = [];
 
-    public function existsByEventId(string $eventId): bool
+    public function findByEventId(string $eventId): ?MarketplaceWebhookEvent
     {
-        return $this->existsByEventIdReturn;
+        return $this->findByEventIdReturn;
     }
 
     public function create(ReceiveWebhookEventDTO $data): MarketplaceWebhookEvent
