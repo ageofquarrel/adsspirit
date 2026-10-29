@@ -61,6 +61,16 @@ return [
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+                // Default REPEATABLE READ takes gap locks on secondary/FK
+                // indexes for every insert, which can deadlock concurrent
+                // inserts into *different* orders' order_items/
+                // order_status_history rows (reproduced under load testing:
+                // ~28% of concurrent webhook writes failed with "Deadlock
+                // found" under REPEATABLE READ, 0% under READ COMMITTED).
+                // This app never relies on repeatable-read snapshot semantics
+                // within a transaction, so READ COMMITTED is strictly safer
+                // here.
+                Mysql::ATTR_INIT_COMMAND => 'SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED',
             ]) : [],
         ],
 

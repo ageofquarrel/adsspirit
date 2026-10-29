@@ -18,7 +18,7 @@ use InvalidArgumentException;
  * before sending: by the time this job runs, a later event may already have
  * moved the order somewhere that makes this email wrong (e.g. cancelled).
  */
-final readonly class SendOrderStatusEmailService
+class SendOrderStatusEmailService
 {
     private const array NOTIFIABLE_STATUSES = [
         OrderStatus::Paid,

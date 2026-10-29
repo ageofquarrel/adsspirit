@@ -41,6 +41,8 @@ COPY . .
 RUN composer dump-autoload --optimize \
     && chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
+COPY docker/php/pool-overrides.conf /usr/local/etc/php-fpm.d/zz-pool-overrides.conf
+
 USER www-data
 
 EXPOSE 9000

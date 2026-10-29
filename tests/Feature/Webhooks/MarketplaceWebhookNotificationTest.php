@@ -3,14 +3,14 @@
 namespace Tests\Feature\Webhooks;
 
 use App\Enums\OrderStatus;
-use App\Jobs\SendOrderStatusEmailJob;
+use App\Events\OrderStatusChanged;
+use App\Listeners\SendOrderStatusEmailListener;
 use App\Mail\OrderCancelledMail;
 use App\Mail\OrderPaidMail;
 use App\Mail\OrderShippedMail;
 use App\Models\Order;
-use App\Services\Notifications\SendOrderStatusEmailService;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Queue;
 use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
@@ -122,13 +122,14 @@ class MarketplaceWebhookNotificationTest extends TestCase
         Mail::assertSent(OrderPaidMail::class, 1);
     }
 
-    public function test_a_paid_order_that_is_cancelled_before_the_job_runs_never_gets_the_paid_email(): void
+    public function test_a_paid_order_that_is_cancelled_before_the_listener_runs_never_gets_the_paid_email(): void
     {
         // Arrange — simulate the race by cancelling the order directly in the DB
-        // between "apply paid" and "the queued job actually running". Since the
-        // queue is synchronous in tests, we fake the queue to capture the job
-        // instead of running it immediately, mutate the order, then run it.
-        Queue::fake([SendOrderStatusEmailJob::class]);
+        // between "apply paid" and "the queued listener actually running". Since
+        // events dispatch through the sync queue in tests, we fake the event to
+        // capture it instead of running the listener immediately, mutate the
+        // order, then run the listener for real.
+        Event::fake([OrderStatusChanged::class]);
         Mail::fake();
 
         $this->postExample('order-paid.json')->assertOk();
@@ -136,9 +137,9 @@ class MarketplaceWebhookNotificationTest extends TestCase
         $order = Order::query()->findOrFail('ord_7Q2KX9M4');
         $order->forceFill(['status' => OrderStatus::Cancelled])->save();
 
-        // Act — now actually run the queued job.
-        Queue::assertPushed(SendOrderStatusEmailJob::class, function (SendOrderStatusEmailJob $job) {
-            app(SendOrderStatusEmailService::class)->handle($job->orderId, $job->type);
+        // Act — now actually run the listener for the captured event.
+        Event::assertDispatched(OrderStatusChanged::class, function (OrderStatusChanged $event) {
+            app(SendOrderStatusEmailListener::class)->handle($event);
 
             return true;
         });

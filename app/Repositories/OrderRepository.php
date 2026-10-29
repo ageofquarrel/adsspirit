@@ -37,6 +37,10 @@ final class OrderRepository implements OrderRepositoryInterface
 
     public function applySnapshot(OrderSnapshotDTO $data, CarbonInterface $statusChangedAt): Order
     {
+        // READ COMMITTED (config/database.php) removes the gap-lock deadlocks
+        // this used to hit under concurrent writes to different orders, but
+        // two webhook events for the *same* order racing each other is still
+        // a real possibility — `attempts: 3` is cheap insurance against that.
         return DB::transaction(function () use ($data, $statusChangedAt) {
             $order = Order::query()->updateOrCreate(['id' => $data->id], [
                 'number' => $data->number,
@@ -60,14 +64,16 @@ final class OrderRepository implements OrderRepositoryInterface
 
             $order->items()->delete();
 
-            foreach ($data->items as $item) {
-                $order->items()->create([
-                    'sku' => $item->sku,
-                    'name' => $item->name,
-                    'quantity' => $item->quantity,
-                    'price' => $item->price,
-                ]);
-            }
+            $now = now();
+            $order->items()->insert(array_map(static fn ($item) => [
+                'sku' => $item->sku,
+                'name' => $item->name,
+                'quantity' => $item->quantity,
+                'price' => $item->price,
+                'order_id' => $data->id,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ], $data->items));
 
             $order->statusHistory()->updateOrCreate(
                 ['status' => $data->status],
@@ -75,6 +81,6 @@ final class OrderRepository implements OrderRepositoryInterface
             );
 
             return $order->fresh(['items', 'statusHistory']);
-        });
+        }, attempts: 3);
     }
 }

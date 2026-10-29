@@ -5,9 +5,11 @@ namespace Tests\Unit\Services\Marketplace;
 use App\DTO\Marketplace\OrderItemSnapshotDTO;
 use App\DTO\Marketplace\OrderSnapshotDTO;
 use App\Enums\OrderStatus;
+use App\Events\OrderStatusChanged;
 use App\Models\Order;
 use App\Services\Marketplace\ApplyOrderEventService;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Event;
 use Tests\Doubles\Actions\MapOrderSnapshotActionMock;
 use Tests\Doubles\Actions\ResolveOrderStatusTimestampActionMock;
 use Tests\Doubles\Repositories\OrderRepositoryMock;
@@ -43,6 +45,7 @@ class ApplyOrderEventServiceTest extends TestCase
     public function test_a_first_time_order_is_always_applied_as_a_status_change(): void
     {
         // Arrange
+        Event::fake();
         $snapshot = $this->snapshot(OrderStatus::Created, CarbonImmutable::parse('2026-01-01T10:00:00+00:00'));
         $statusChangedAt = CarbonImmutable::parse('2026-01-01T10:00:00+00:00');
 
@@ -65,11 +68,18 @@ class ApplyOrderEventServiceTest extends TestCase
         $this->assertSame(OrderStatus::Created, $result->newStatus);
         $this->assertSame(1, $orderRepository->applySnapshotCallCount);
         $this->assertSame($snapshot, $orderRepository->lastSnapshot);
+        Event::assertDispatched(
+            OrderStatusChanged::class,
+            fn (OrderStatusChanged $event) => $event->orderId === 'ord_1'
+                && $event->previousStatus === null
+                && $event->newStatus === OrderStatus::Created,
+        );
     }
 
     public function test_a_newer_snapshot_that_changes_status_is_applied(): void
     {
         // Arrange
+        Event::fake();
         $existing = new Order([
             'id' => 'ord_1',
             'status' => OrderStatus::Created,
@@ -95,11 +105,13 @@ class ApplyOrderEventServiceTest extends TestCase
         $this->assertSame(OrderStatus::Created, $result->previousStatus);
         $this->assertSame(OrderStatus::Paid, $result->newStatus);
         $this->assertSame(1, $orderRepository->applySnapshotCallCount);
+        Event::assertDispatched(OrderStatusChanged::class);
     }
 
     public function test_a_newer_snapshot_with_the_same_status_is_applied_without_a_status_change(): void
     {
         // Arrange — e.g. an order.updated event that doesn't touch the status.
+        Event::fake();
         $existing = new Order([
             'id' => 'ord_1',
             'status' => OrderStatus::Created,
@@ -122,11 +134,13 @@ class ApplyOrderEventServiceTest extends TestCase
         // Assert
         $this->assertTrue($result->applied);
         $this->assertFalse($result->statusChanged);
+        Event::assertNotDispatched(OrderStatusChanged::class);
     }
 
     public function test_a_stale_or_replayed_snapshot_is_ignored(): void
     {
         // Arrange
+        Event::fake();
         $existing = new Order([
             'id' => 'ord_1',
             'status' => OrderStatus::Paid,
@@ -151,11 +165,13 @@ class ApplyOrderEventServiceTest extends TestCase
         $this->assertFalse($result->statusChanged);
         $this->assertSame(OrderStatus::Paid, $result->newStatus);
         $this->assertSame(0, $orderRepository->applySnapshotCallCount);
+        Event::assertNotDispatched(OrderStatusChanged::class);
     }
 
     public function test_a_snapshot_with_the_exact_same_updated_at_is_treated_as_a_replay_and_ignored(): void
     {
         // Arrange
+        Event::fake();
         $sameInstant = CarbonImmutable::parse('2026-01-01T10:00:00+00:00');
         $existing = new Order([
             'id' => 'ord_1',
@@ -179,5 +195,6 @@ class ApplyOrderEventServiceTest extends TestCase
         // Assert
         $this->assertFalse($result->applied);
         $this->assertSame(0, $orderRepository->applySnapshotCallCount);
+        Event::assertNotDispatched(OrderStatusChanged::class);
     }
 }

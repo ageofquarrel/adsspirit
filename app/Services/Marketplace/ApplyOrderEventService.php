@@ -5,6 +5,7 @@ namespace App\Services\Marketplace;
 use App\Actions\Marketplace\MapOrderSnapshotAction;
 use App\Actions\Marketplace\ResolveOrderStatusTimestampAction;
 use App\DTO\Marketplace\ApplyOrderEventResultDTO;
+use App\Events\OrderStatusChanged;
 use App\Repositories\Contracts\OrderRepositoryInterface;
 
 final readonly class ApplyOrderEventService
@@ -37,10 +38,15 @@ final readonly class ApplyOrderEventService
         $previousStatus = $existing?->status;
         $statusChangedAt = ($this->resolveStatusTimestamp)($snapshot);
         $order = $this->repository->applySnapshot($snapshot, $statusChangedAt);
+        $statusChanged = $previousStatus !== $order->status;
+
+        if ($statusChanged) {
+            OrderStatusChanged::dispatch($order->id, $previousStatus, $order->status);
+        }
 
         return new ApplyOrderEventResultDTO(
             applied: true,
-            statusChanged: $previousStatus !== $order->status,
+            statusChanged: $statusChanged,
             previousStatus: $previousStatus,
             newStatus: $order->status,
             order: $order,
